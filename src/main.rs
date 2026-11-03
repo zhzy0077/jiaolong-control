@@ -89,6 +89,7 @@ fn worker(
     commands: Receiver<Command>,
     updates: Sender<Result<Snapshot, String>>,
     path: std::path::PathBuf,
+    legacy: Option<std::path::PathBuf>,
 ) {
     let mut transport = match Transport::new() {
         Ok(t) => Some(t),
@@ -97,7 +98,7 @@ fn worker(
             None
         }
     };
-    let mut settings = match Settings::open(path) {
+    let mut settings = match Settings::open_with_legacy(path, legacy.as_deref()) {
         Ok(s) => s,
         Err(e) => {
             let _ = updates.send(Err(e.to_string()));
@@ -259,10 +260,17 @@ impl View {
         };
         let (tx, commands) = mpsc::channel();
         let (updates, rx) = mpsc::channel();
-        let path = std::env::current_exe()
+        let legacy = std::env::current_exe()
             .unwrap()
             .with_file_name("AppMachineInfo");
-        std::thread::spawn(move || worker(commands, updates, path));
+        #[cfg(target_os = "linux")]
+        let (path, legacy) = (
+            preferences_path.with_file_name("AppMachineInfo"),
+            Some(legacy),
+        );
+        #[cfg(not(target_os = "linux"))]
+        let (path, legacy) = (legacy, None);
+        std::thread::spawn(move || worker(commands, updates, path, legacy));
         cx.spawn(async move |view, cx| {
             loop {
                 cx.background_executor()
@@ -508,7 +516,7 @@ mod hardware_tests {
         };
         let (tx, commands) = mpsc::channel();
         let (updates, rx) = mpsc::channel();
-        let handle = std::thread::spawn(move || worker(commands, updates, settings_path));
+        let handle = std::thread::spawn(move || worker(commands, updates, settings_path, None));
         let worker = Worker {
             tx: Some(tx),
             handle: Some(handle),

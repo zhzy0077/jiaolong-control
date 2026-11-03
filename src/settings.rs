@@ -1,7 +1,7 @@
 use crate::protocol::Mode;
 use anyhow::{Context, Result, ensure};
 use base64::{Engine, engine::general_purpose::STANDARD};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub struct Settings {
     path: PathBuf,
@@ -10,8 +10,16 @@ pub struct Settings {
 
 impl Settings {
     pub fn open(path: PathBuf) -> Result<Self> {
-        let mut rows: Vec<String> = if path.exists() {
-            std::fs::read_to_string(&path)?
+        Self::open_with_legacy(path, None)
+    }
+    pub fn open_with_legacy(path: PathBuf, legacy: Option<&Path>) -> Result<Self> {
+        let source = if path.exists() {
+            Some(path.as_path())
+        } else {
+            legacy.filter(|p| p.is_file())
+        };
+        let mut rows: Vec<String> = if let Some(source) = source {
+            std::fs::read_to_string(source)?
                 .lines()
                 .map(str::to_owned)
                 .collect()
@@ -49,6 +57,9 @@ impl Settings {
                 std::fs::set_permissions(&self.path, permissions)?;
             }
         }
+        if let Some(parent) = self.path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent)?;
+        }
         std::fs::write(&self.path, self.rows.join("\r\n") + "\r\n")?;
         #[cfg(windows)]
         {
@@ -63,6 +74,39 @@ impl Settings {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn user_config_imports_legacy_without_overwriting_it() {
+        let directory =
+            std::env::temp_dir().join(format!("jiaolong-migration-{}", std::process::id()));
+        let legacy = directory.join("legacy/AppMachineInfo");
+        let path = directory.join("config/jiaolong-control/AppMachineInfo");
+        let mut old = Settings::open(legacy.clone()).unwrap();
+        old.save(Mode::Balanced, 47).unwrap();
+        let mut migrated = Settings::open_with_legacy(path.clone(), Some(&legacy)).unwrap();
+        assert_eq!(migrated.speed(Mode::Balanced).unwrap(), 47);
+        migrated.save(Mode::Balanced, 48).unwrap();
+        assert_eq!(
+            Settings::open(legacy.clone())
+                .unwrap()
+                .speed(Mode::Balanced)
+                .unwrap(),
+            47
+        );
+        assert_eq!(
+            Settings::open_with_legacy(path.clone(), Some(&legacy))
+                .unwrap()
+                .speed(Mode::Balanced)
+                .unwrap(),
+            48
+        );
+        #[cfg(windows)]
+        for file in [&legacy, &path] {
+            let mut permissions = std::fs::metadata(file).unwrap().permissions();
+            permissions.set_readonly(false);
+            std::fs::set_permissions(file, permissions).unwrap();
+        }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
     #[test]
     fn original_file_format_preserves_other_settings() {
         let path = std::env::temp_dir().join(format!("jiaolong-settings-{}", std::process::id()));

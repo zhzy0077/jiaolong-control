@@ -7,6 +7,13 @@ A Rust/GPUI fan-control app for Jiaolong laptops on Linux, using the original Mi
 - Maximum-fan switch, Adwaita light/dark/system themes, and Chinese/English UI.
 - System fontconfig fonts; GPUI pinned to the variable-font weight fix in [PR #62832](https://github.com/zed-industries/zed/pull/62832).
 
+## Screenshots
+
+Light and dark themes (preview data):
+
+![Light theme](docs/screenshots/fan-light.png)
+![Dark theme](docs/screenshots/fan-dark.png)
+
 ## Build and run
 
 Requires Rust, GCC, Make, matching kernel development headers, and Wayland or X11. Fedora graphics dependencies: `libxkbcommon-devel libxkbcommon-x11-devel wayland-devel fontconfig-devel`.
@@ -26,7 +33,18 @@ Preview with sample data:
 ./target/release/jiaolong-control --preview-ui=dark
 ```
 
-App preferences live in `$XDG_CONFIG_HOME/jiaolong-control/preferences.json` (default `~/.config/jiaolong-control/`). Fan targets use the original `AppMachineInfo` format beside the executable. Mode switching follows the original Type-C power restriction.
+App preferences live in `$XDG_CONFIG_HOME/jiaolong-control/preferences.json` (default `~/.config/jiaolong-control/`). Fan targets use the original `AppMachineInfo` format in the same configuration directory; existing files beside the executable are imported when the user file is absent. Mode switching follows the original Type-C power restriction.
+
+## RPM / DEB packages
+
+Download packages from [Releases](https://github.com/zhzy0077/jiaolong-control/releases).
+
+```bash
+python3 packaging/build.py rpm
+python3 packaging/build.py deb
+```
+
+Packages include a DKMS module installed by their post-install scripts. See [packaging/](packaging/) for dependencies and installation.
 
 ## Tests
 

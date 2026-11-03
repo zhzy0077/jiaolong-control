@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+case "$1" in
+    remove) /usr/lib/jiaolong-control/kernel-module remove @VERSION@ ;;
+esac
+exit 0

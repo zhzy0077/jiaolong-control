@@ -1,0 +1,7 @@
+PACKAGE_NAME="jiaolong-mifs"
+PACKAGE_VERSION="@VERSION@"
+BUILT_MODULE_NAME[0]="jiaolong_mifs"
+DEST_MODULE_LOCATION[0]="/updates/dkms"
+MAKE[0]="make KDIR=/lib/modules/${kernelver}/build"
+CLEAN="make KDIR=/lib/modules/${kernelver}/build clean"
+AUTOINSTALL="yes"

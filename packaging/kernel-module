@@ -1,0 +1,48 @@
+#!/bin/sh
+set -eu
+module=jiaolong-mifs
+version=${2:?module version required}
+case "${1:-}" in
+    install)
+        if [ -z "$(dkms status -m "$module" -v "$version")" ]; then
+            dkms add -m "$module" -v "$version"
+        fi
+        current=$(uname -r)
+        built=0
+        built_current=0
+        for headers in /lib/modules/*/build; do
+            [ -f "$headers/Makefile" ] || continue
+            kernel=${headers%/build}
+            kernel=${kernel##*/}
+            dkms install -m "$module" -v "$version" -k "$kernel"
+            built=1
+            [ "$kernel" != "$current" ] || built_current=1
+        done
+        if [ "$built" = 0 ]; then
+            echo 'Jiaolong: install matching kernel development headers, then reconfigure the package.' >&2
+            exit 1
+        fi
+        for old in $(dkms status -m "$module" | sed -n "s|^$module/\([^, :]*\).*|\1|p" | sort -u); do
+            [ "$old" = "$version" ] || dkms remove -m "$module" -v "$old" --all
+        done
+        if [ "$built_current" = 1 ]; then
+            for device in /sys/bus/wmi/devices/B60BFB48-3E5B-49E4-A0E9-8CFFE1B3434B*; do
+                [ ! -e "$device" ] || modprobe jiaolong_mifs
+            done
+        else
+            echo 'Jiaolong: module built for installed kernels; reboot into one of those kernels to use it.'
+        fi
+        ;;
+    remove)
+        modprobe -r jiaolong_mifs 2>/dev/null || true
+        if [ -n "$(dkms status -m "$module" -v "$version")" ]; then
+            dkms remove -m "$module" -v "$version" --all
+        fi
+        ;;
+    *) echo "Usage: $0 install|remove VERSION" >&2; exit 2 ;;
+esac
+if [ -S /run/udev/control ]; then
+    udevadm control --reload-rules
+    udevadm trigger --subsystem-match=misc --sysname-match=jiaolong-mifs
+    udevadm settle
+fi

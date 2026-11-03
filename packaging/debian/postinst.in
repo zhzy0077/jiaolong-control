@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+case "$1" in
+    configure) /usr/lib/jiaolong-control/kernel-module install @VERSION@ ;;
+esac
+exit 0

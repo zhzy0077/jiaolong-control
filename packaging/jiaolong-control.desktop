@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Jiaolong Control
+Name[zh_CN]=蛟龙控制中心
+Comment=Control Jiaolong laptop fans and performance modes
+Exec=jiaolong-control
+Icon=jiaolong-control
+Terminal=false
+Categories=Settings;HardwareSettings;
+StartupWMClass=jiaolong-control
