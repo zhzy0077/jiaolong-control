@@ -34,6 +34,9 @@ state = pathlib.Path(os.environ['TEST_STATE'])
 if name == 'uname':
     print(os.environ['TEST_KERNEL'])
 if name == 'dkms':
+    if args[0] in ('install', 'remove'):
+        assert os.environ.get('DKMS_DIRECTIVE_POST_TRANSACTION') == 'post_transaction='
+        assert args[-2:] == ['--directive', 'post_transaction=']
     if args[0] == 'status' and state.exists():
         print('jiaolong-mifs/0.1.0, 6.1-test, x86_64: installed')
     elif args[0] == 'add':
@@ -76,7 +79,7 @@ if name == 'dkms':
         self.run_hook('install')
         calls = self.calls()
         self.assertEqual(calls.count(['dkms', 'add', '-m', 'jiaolong-mifs', '-v', '0.1.0']), 1)
-        self.assertIn(['dkms', 'install', '-m', 'jiaolong-mifs', '-v', '0.1.0', '-k', '6.1-test'], calls)
+        self.assertIn(['dkms', 'install', '-m', 'jiaolong-mifs', '-v', '0.1.0', '-k', '6.1-test', '--directive', 'post_transaction='], calls)
         self.assertIn(['modprobe', 'jiaolong_mifs'], calls)
         self.assertIn(['udevadm', 'control', '--reload-rules'], calls)
 
@@ -84,7 +87,7 @@ if name == 'dkms':
         self.run_hook('install')
         self.run_hook('remove')
         self.assertFalse(self.state.exists())
-        self.assertIn(['dkms', 'remove', '-m', 'jiaolong-mifs', '-v', '0.1.0', '--all'], self.calls())
+        self.assertIn(['dkms', 'remove', '-m', 'jiaolong-mifs', '-v', '0.1.0', '--all', '--directive', 'post_transaction='], self.calls())
 
     def test_failed_build_does_not_load_module(self):
         self.env['TEST_BUILD_FAIL'] = '1'

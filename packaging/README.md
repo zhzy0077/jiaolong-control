@@ -22,6 +22,8 @@ RPM targets Fedora and depends on `kernel-devel-matched`. DEB depends on `linux-
 
 Removal unregisters the package's DKMS version and removes package-owned access rules and auto-load configuration. User preferences and fan targets remain under the user's `jiaolong-control` configuration directory.
 
+Package install/remove commands disable DKMS's global `post_transaction` hook for those invocations. This module loads after boot, so these operations require `depmod` and `modprobe` rather than rebuilding every initramfs. System-wide DKMS configuration is preserved.
+
 Hook tests use fake kernels and command stubs:
 
 ```bash

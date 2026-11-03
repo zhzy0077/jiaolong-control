@@ -2,6 +2,9 @@
 set -eu
 module=jiaolong-mifs
 version=${2:?module version required}
+dkms_module_change() {
+    DKMS_DIRECTIVE_POST_TRANSACTION=post_transaction= dkms "$@" --directive post_transaction=
+}
 case "${1:-}" in
     install)
         if [ -z "$(dkms status -m "$module" -v "$version")" ]; then
@@ -14,7 +17,8 @@ case "${1:-}" in
             [ -f "$headers/Makefile" ] || continue
             kernel=${headers%/build}
             kernel=${kernel##*/}
-            dkms install -m "$module" -v "$version" -k "$kernel"
+            echo "Jiaolong: installing kernel module for $kernel"
+            dkms_module_change install -m "$module" -v "$version" -k "$kernel"
             built=1
             [ "$kernel" != "$current" ] || built_current=1
         done
@@ -23,7 +27,7 @@ case "${1:-}" in
             exit 1
         fi
         for old in $(dkms status -m "$module" | sed -n "s|^$module/\([^, :]*\).*|\1|p" | sort -u); do
-            [ "$old" = "$version" ] || dkms remove -m "$module" -v "$old" --all
+            [ "$old" = "$version" ] || dkms_module_change remove -m "$module" -v "$old" --all
         done
         if [ "$built_current" = 1 ]; then
             for device in /sys/bus/wmi/devices/B60BFB48-3E5B-49E4-A0E9-8CFFE1B3434B*; do
@@ -36,7 +40,7 @@ case "${1:-}" in
     remove)
         modprobe -r jiaolong_mifs 2>/dev/null || true
         if [ -n "$(dkms status -m "$module" -v "$version")" ]; then
-            dkms remove -m "$module" -v "$version" --all
+            dkms_module_change remove -m "$module" -v "$version" --all
         fi
         ;;
     *) echo "Usage: $0 install|remove VERSION" >&2; exit 2 ;;
