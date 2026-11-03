@@ -1,0 +1,23 @@
+[package]
+name = "jiaolong-control"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+log = "0.4"
+base64 = "0.22"
+# zed-industries/zed#62832: variable-font weight rendering fix.
+gpui = { version = "=0.2.2", git = "https://github.com/ravi-arnan/zed.git", rev = "522b0e2ac290da1f6e101f09eae3bb6958940b15" }
+gpui_platform = { git = "https://github.com/ravi-arnan/zed.git", rev = "522b0e2ac290da1f6e101f09eae3bb6958940b15", features = ["wayland", "x11"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(unix)'.dependencies]
+libc = "=0.2.186"
+
+[target.'cfg(windows)'.dependencies]
+wmi = { version = "0.18.4", default-features = false }
+
+[dev-dependencies]
+gpui_wgpu = { git = "https://github.com/ravi-arnan/zed.git", rev = "522b0e2ac290da1f6e101f09eae3bb6958940b15", features = ["font-kit"] }

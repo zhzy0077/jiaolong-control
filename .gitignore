@@ -1,0 +1,9 @@
+/target/
+/dist/
+/linux/*.o
+/linux/*.ko
+/linux/*.mod
+/linux/*.mod.c
+/linux/.*.cmd
+/linux/Module.symvers
+/linux/modules.order
